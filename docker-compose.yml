@@ -1,0 +1,39 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: turnoya_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: turnoya_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - turnoya_mysql_data:/var/lib/mysql
+      - ./turnoya_schema.sql:/docker-entrypoint-initdb.d/turnoya_schema.sql:ro
+
+  api:
+    image: python:3.12-slim
+    container_name: turnoya_api
+    working_dir: /app
+    command: sh -c "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      APP_NAME: TurnoYa API
+      APP_ENV: development
+      SECRET_KEY: turnoya-docker-dev-secret
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ""
+      DB_NAME: turnoya_db
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      - mysql
+
+volumes:
+  turnoya_mysql_data:
